@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { getServiceClient, KNOWLEDGE_BUCKET } from "@/lib/supabase";
 import { extractPdfText } from "@/lib/pdf";
+import { indexDocument } from "@/lib/indexing";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,12 +20,26 @@ export async function GET() {
       .select("id, name, category, created_at, content_text")
       .order("created_at", { ascending: false });
     if (error) throw error;
+
+    // Tally how many chunks each document has been indexed into.
+    const { data: chunkRows } = await supabase
+      .from("document_chunks")
+      .select("document_id");
+    const chunkCounts = new Map<string, number>();
+    for (const row of chunkRows ?? []) {
+      chunkCounts.set(
+        row.document_id,
+        (chunkCounts.get(row.document_id) ?? 0) + 1,
+      );
+    }
+
     const documents = (data ?? []).map((d) => ({
       id: d.id,
       name: d.name,
       category: d.category,
       created_at: d.created_at,
       chars: d.content_text ? d.content_text.length : 0,
+      chunks: chunkCounts.get(d.id) ?? 0,
     }));
     return NextResponse.json({ documents });
   } catch (e) {
@@ -84,13 +99,18 @@ export async function POST(req: NextRequest) {
       .single();
     if (insErr) throw insErr;
 
+    // Chunk + embed the text so it's retrievable via vector search.
+    const chunks = await indexDocument(supabase, row.id, contentText);
+
     const warning =
       contentText.length < 20
         ? "We couldn't extract much text from this file. If it's a scanned PDF (an image), the assistant won't be able to read it."
-        : null;
+        : chunks === 0
+          ? "No searchable text was indexed from this file, so the assistant won't be able to use it."
+          : null;
 
     return NextResponse.json({
-      document: { ...row, chars: contentText.length },
+      document: { ...row, chars: contentText.length, chunks },
       warning,
     });
   } catch (e) {

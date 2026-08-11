@@ -109,20 +109,6 @@ export default function EmployeePage() {
                 <span className="step-num">{i + 1}</span>
                 <div className="step-body">
                   <p>{s.text}</p>
-                  {s.screenshotSuggestion && (
-                    <div className="shot">
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                      >
-                        <rect x="3" y="4" width="18" height="14" rx="2" />
-                        <path d="M8 21h8M12 18v3" />
-                      </svg>
-                      <span>Screenshot suggestion: {s.screenshotSuggestion}</span>
-                    </div>
-                  )}
                   {s.source && (
                     <div className="source">
                       Source: <b>{s.source}</b>

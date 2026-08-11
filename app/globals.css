@@ -341,28 +341,6 @@ textarea.ask-field:focus {
   font-size: 14.5px;
   color: var(--ink);
 }
-.shot {
-  display: flex;
-  gap: 9px;
-  align-items: flex-start;
-  margin-top: 11px;
-  padding: 9px 11px;
-  border-radius: 8px;
-  background: var(--paper);
-  border: 1px dashed var(--line-strong);
-}
-.shot svg {
-  width: 15px;
-  height: 15px;
-  color: var(--ink-3);
-  flex: none;
-  margin-top: 1px;
-}
-.shot span {
-  font-size: 12.5px;
-  color: var(--ink-2);
-  font-style: italic;
-}
 .source {
   margin-top: 10px;
   display: inline-flex;

@@ -4,7 +4,6 @@
 
 export type GuideStep = {
   text: string;
-  screenshotSuggestion?: string | null;
   source?: string | null;
 };
 
@@ -22,7 +21,6 @@ export const GUIDE_SHAPE = `{
   "steps": [
     {
       "text": "one simple action, in plain language",
-      "screenshotSuggestion": "what the screen should show at this step, or null",
       "source": "the name of the document this step came from, or null"
     }
   ],
@@ -68,7 +66,6 @@ export function parseGuide(raw: string): Guide {
       const step = (s ?? {}) as Record<string, unknown>;
       return {
         text: typeof step.text === "string" ? step.text.trim() : "",
-        screenshotSuggestion: cleanStr(step.screenshotSuggestion),
         source: cleanStr(step.source),
       };
     })

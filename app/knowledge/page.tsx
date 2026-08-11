@@ -8,6 +8,7 @@ type DocRow = {
   category: string | null;
   created_at: string;
   chars: number;
+  chunks: number;
 };
 
 function fileKind(name: string): "pdf" | "txt" {
@@ -31,6 +32,8 @@ export default function KnowledgePage() {
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [reindexing, setReindexing] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function loadDocs() {
@@ -73,6 +76,25 @@ export default function KnowledgePage() {
       setError(err instanceof Error ? err.message : "Upload failed.");
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function onReindex() {
+    setReindexing(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await fetch("/api/reindex", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Reindex failed.");
+      setNotice(
+        `Reindexed ${data.indexedDocuments}/${data.documents} document(s) into ${data.totalChunks} searchable chunks.`,
+      );
+      await loadDocs();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Reindex failed.");
+    } finally {
+      setReindexing(false);
     }
   }
 
@@ -146,10 +168,40 @@ export default function KnowledgePage() {
       </form>
 
       {warning && <div className="errorbox" style={{ borderColor: "var(--amber)", color: "var(--amber)", background: "var(--amber-wash)" }}>{warning}</div>}
+      {notice && <div className="errorbox" style={{ borderColor: "var(--green)", color: "var(--green)", background: "var(--green-wash)" }}>{notice}</div>}
       {error && <div className="errorbox">{error}</div>}
 
-      <div className="table-head" style={{ margin: "10px 0" }}>
+      <div
+        className="table-head"
+        style={{
+          margin: "10px 0",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 10,
+        }}
+      >
         <span className="eyebrow">Published knowledge</span>
+        <button
+          className="btn"
+          type="button"
+          onClick={onReindex}
+          disabled={reindexing || docs.length === 0}
+          title="Re-chunk and re-embed every document"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M23 4v6h-6M1 20v-6h6" />
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+          </svg>
+          {reindexing ? "Reindexing…" : "Reindex all"}
+        </button>
       </div>
 
       {loadingList ? (
@@ -168,6 +220,7 @@ export default function KnowledgePage() {
                 <th>Category</th>
                 <th>Uploaded</th>
                 <th>Text</th>
+                <th>Indexed</th>
                 <th></th>
               </tr>
             </thead>
@@ -192,6 +245,17 @@ export default function KnowledgePage() {
                   <td className="muted-cell">{formatDate(d.created_at)}</td>
                   <td className="muted-cell">
                     {d.chars.toLocaleString()} chars
+                  </td>
+                  <td>
+                    {d.chunks > 0 ? (
+                      <span className="tag" style={{ color: "var(--green)", borderColor: "var(--green)" }}>
+                        {d.chunks} chunk{d.chunks === 1 ? "" : "s"}
+                      </span>
+                    ) : (
+                      <span className="tag" style={{ color: "var(--amber)", borderColor: "var(--amber)" }}>
+                        not indexed
+                      </span>
+                    )}
                   </td>
                   <td>
                     <button

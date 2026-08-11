@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/lib/supabase";
 import { generateGuide } from "@/lib/openrouter";
+import { embed } from "@/lib/embeddings";
+
+// How many of the most-similar chunks to retrieve for each question.
+const MATCH_COUNT = 6;
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,19 +27,25 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = getServiceClient();
-    const { data, error } = await supabase
-      .from("documents")
-      .select("name, content_text")
-      .order("created_at", { ascending: false });
+
+    // Retrieval-Augmented Generation: embed the question, then fetch only the
+    // most relevant chunks via pgvector instead of stuffing every document.
+    const queryEmbedding = await embed(problem);
+    const { data: matches, error } = await supabase.rpc("match_document_chunks", {
+      query_embedding: JSON.stringify(queryEmbedding),
+      match_count: MATCH_COUNT,
+    });
     if (error) throw error;
 
-    const knowledge = (data ?? [])
-      .filter((d) => d.content_text && d.content_text.trim().length > 0)
-      .map((d) => `### DOCUMENT: ${d.name}\n${d.content_text}`)
+    const knowledge = (matches ?? [])
+      .map(
+        (m: { name: string; content: string }) =>
+          `### FROM: ${m.name}\n${m.content}`,
+      )
       .join("\n\n");
 
     const guide = await generateGuide(problem, knowledge);
-    return NextResponse.json({ guide, docCount: data?.length ?? 0 });
+    return NextResponse.json({ guide, matchCount: matches?.length ?? 0 });
   } catch (e) {
     return NextResponse.json(
       { error: errMsg(e, "Something went wrong generating your guide.") },
