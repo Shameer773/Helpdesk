@@ -1,9 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Keep native/CommonJS packages out of the bundler so their runtime binaries
-  // (onnxruntime-node, sharp) resolve correctly on the server.
-  serverExternalPackages: ["pdf-parse", "@huggingface/transformers", "sharp"],
+  // pdf-parse is a CommonJS package; keep it out of the bundler. (Embeddings now
+  // run in a Supabase Edge Function, so no native ML packages are bundled here.)
+  serverExternalPackages: ["pdf-parse"],
 };
 
 export default nextConfig;
