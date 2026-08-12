@@ -109,11 +109,6 @@ export default function EmployeePage() {
                 <span className="step-num">{i + 1}</span>
                 <div className="step-body">
                   <p>{s.text}</p>
-                  {s.source && (
-                    <div className="source">
-                      Source: <b>{s.source}</b>
-                    </div>
-                  )}
                 </div>
               </li>
             ))}
