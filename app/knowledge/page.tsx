@@ -297,7 +297,7 @@ export default function KnowledgePage() {
         </svg>
         When a file is uploaded, its text is extracted and stored so the assistant
         can read it. Removing a document immediately stops the AI from using it.
-        (Login and admin-only access come in a later phase.)
+        Only administrators can reach this page.
       </p>
     </main>
   );

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/lib/supabase";
 import { generateGuide } from "@/lib/openrouter";
 import { embed } from "@/lib/embeddings";
+import { requireUser } from "@/lib/api-auth";
 
 // How many of the most-similar chunks to retrieve for each question.
 const MATCH_COUNT = 6;
@@ -16,6 +17,8 @@ function errMsg(e: unknown, fallback: string): string {
 // Take the employee's problem, stuff all document text into the prompt, and
 // return a grounded, structured guide.
 export async function POST(req: NextRequest) {
+  const gate = await requireUser();
+  if (gate instanceof NextResponse) return gate;
   try {
     const body = await req.json().catch(() => ({}));
     const problem = (body?.problem as string | undefined)?.trim();

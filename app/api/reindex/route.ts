@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServiceClient } from "@/lib/supabase";
 import { indexDocument } from "@/lib/indexing";
+import { requireAdmin } from "@/lib/api-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,6 +13,8 @@ function errMsg(e: unknown, fallback: string): string {
 // Rebuild embeddings for every document from its stored text. Useful to backfill
 // documents uploaded before RAG existed, or after an embedding-model change.
 export async function POST() {
+  const gate = await requireAdmin();
+  if (gate instanceof NextResponse) return gate;
   try {
     const supabase = getServiceClient();
     const { data, error } = await supabase

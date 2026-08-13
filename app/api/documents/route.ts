@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { getServiceClient, KNOWLEDGE_BUCKET } from "@/lib/supabase";
 import { extractPdfText } from "@/lib/pdf";
 import { indexDocument } from "@/lib/indexing";
+import { requireAdmin } from "@/lib/api-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,6 +14,8 @@ function errMsg(e: unknown, fallback: string): string {
 
 // List all knowledge-base documents.
 export async function GET() {
+  const gate = await requireAdmin();
+  if (gate instanceof NextResponse) return gate;
   try {
     const supabase = getServiceClient();
     const { data, error } = await supabase
@@ -52,6 +55,8 @@ export async function GET() {
 
 // Upload a document: store the original file, extract its text, save the row.
 export async function POST(req: NextRequest) {
+  const gate = await requireAdmin();
+  if (gate instanceof NextResponse) return gate;
   try {
     const form = await req.formData();
     const file = form.get("file");
@@ -123,6 +128,8 @@ export async function POST(req: NextRequest) {
 
 // Remove a document (its stored file and its row).
 export async function DELETE(req: NextRequest) {
+  const gate = await requireAdmin();
+  if (gate instanceof NextResponse) return gate;
   try {
     const id = req.nextUrl.searchParams.get("id");
     if (!id) {

@@ -1,11 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { getBrowserSupabase } from "@/lib/supabase-browser";
 
-export default function Nav() {
+export default function Nav({
+  email,
+  isAdmin,
+  signedIn,
+}: {
+  email: string | null;
+  isAdmin: boolean;
+  signedIn: boolean;
+}) {
   const path = usePathname();
+  const router = useRouter();
   const onKnowledge = path?.startsWith("/knowledge");
+  const onAdmin = path?.startsWith("/admin");
+  const onHelp = !onKnowledge && !onAdmin;
+
+  async function signOut() {
+    await getBrowserSupabase().auth.signOut();
+    router.replace("/login");
+    router.refresh();
+  }
+
   return (
     <header className="topbar">
       <Link href="/" className="brand" aria-label="HelpDesk-Assist home">
@@ -28,17 +47,39 @@ export default function Nav() {
         </span>
       </Link>
       <div className="spacer" />
-      <nav className="nav">
-        <Link href="/" className={`navlink ${!onKnowledge ? "active" : ""}`}>
-          Get help
-        </Link>
-        <Link
-          href="/knowledge"
-          className={`navlink ${onKnowledge ? "active" : ""}`}
-        >
-          Knowledge base
-        </Link>
-      </nav>
+
+      {signedIn && (
+        <nav className="nav">
+          <Link href="/" className={`navlink ${onHelp ? "active" : ""}`}>
+            Get help
+          </Link>
+          {isAdmin && (
+            <>
+              <Link
+                href="/knowledge"
+                className={`navlink ${onKnowledge ? "active" : ""}`}
+              >
+                Knowledge base
+              </Link>
+              <Link
+                href="/admin"
+                className={`navlink ${onAdmin ? "active" : ""}`}
+              >
+                Users
+              </Link>
+            </>
+          )}
+          {email && (
+            <span className="navuser" title={isAdmin ? "Administrator" : "User"}>
+              {email}
+              {isAdmin && <span className="tag navtag">Admin</span>}
+            </span>
+          )}
+          <button className="navlink navbtn" type="button" onClick={signOut}>
+            Sign out
+          </button>
+        </nav>
+      )}
     </header>
   );
 }
